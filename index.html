@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChronoFlow Dual-Pro Task Suite</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <style>
+        body { font-family: 'Plus Jakarta Sans', 'Hind Siliguri', sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(16px); }
+        .dark-glass { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(16px); }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-900 via-slate-900 to-black min-h-screen text-slate-100 p-2 sm:p-6 flex flex-col items-center justify-between">
+
+    <div class="w-full max-w-4xl mx-auto glass rounded-3xl shadow-2xl border border-white/20 p-4 sm:p-8 text-slate-800 my-auto">
+        
+        <!-- Top Controls: Language & Audio Enable -->
+        <div class="flex flex-wrap justify-between items-center mb-6 gap-3 pb-4 border-b border-slate-200">
+            <div class="flex items-center gap-2">
+                <span class="text-2xl">⚡</span>
+                <h1 class="text-xl sm:text-2xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">ChronoFlow Pro</h1>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <button id="audioUnlockBtn" onclick="unlockAudio()" class="bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-1.5 rounded-xl text-xs sm:text-sm shadow-md transition flex items-center gap-1.5">
+                    🔊 <span id="txtAudioBtn">Enable Sound / সাউন্ড চালু</span>
+                </button>
+                <button onclick="toggleLanguage()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs sm:text-sm shadow-md transition">
+                    🌐 <span id="txtLangSwitch">বাংলা / English</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Active Alarm Alert Banner -->
+        <div id="alarmBanner" class="hidden mb-6 p-4 rounded-2xl bg-red-500 text-white shadow-lg border-2 border-red-300 animate-pulse flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="text-center sm:text-left">
+                <h3 id="alarmTitle" class="text-lg font-black tracking-wide">🚨 ALARM TRIGGERED!</h3>
+                <p id="alarmTaskName" class="text-xl font-bold mt-0.5">Task Name Here</p>
+            </div>
+            <div class="flex gap-2 w-full sm:w-auto">
+                <button onclick="snoozeAlarm()" class="flex-1 sm:flex-none bg-white text-red-600 font-bold px-4 py-2 rounded-xl text-sm shadow hover:bg-red-50 transition">Snooze (5m)</button>
+                <button onclick="dismissAlarm()" class="flex-1 sm:flex-none bg-slate-900 text-white font-bold px-5 py-2 rounded-xl text-sm shadow hover:bg-slate-800 transition" id="txtDismiss">Done / শেষ</button>
+            </div>
+        </div>
+
+        <!-- Add Task Form -->
+        <div class="bg-slate-100 p-4 sm:p-5 rounded-2xl mb-6 border border-slate-200 shadow-inner">
+            <h2 id="txtAddTitle" class="text-sm font-bold text-slate-700 uppercase tracking-wider mb-3">➕ Add New Weekly Task / নতুন কাজ যোগ করুন</h2>
+            <form id="taskForm" onsubmit="addTask(event)" class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                <input type="text" id="taskInput" required placeholder="Task title (e.g., Study Economics)..." class="sm:col-span-5 px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 text-sm bg-white">
+                
+                <input type="time" id="taskTime" required class="sm:col-span-3 px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 text-sm bg-white font-bold">
+                
+                <button type="submit" id="txtAddBtn" class="sm:col-span-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl shadow transition text-sm">Add Task / যোগ করুন</button>
+            </form>
+
+            <!-- Day Checkboxes Selection -->
+            <div class="mt-4 pt-3 border-t border-slate-200">
+                <div class="flex justify-between items-center mb-2">
+                    <span id="txtSelectDays" class="text-xs font-bold text-slate-600 uppercase">Select Days / বারের দিনগুলো নির্বাচন করুন:</span>
+                    <div class="space-x-1">
+                        <button type="button" onclick="selectAllDays(true)" class="text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-0.5 rounded font-semibold">All</button>
+                        <button type="button" onclick="selectAllDays(false)" class="text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-0.5 rounded font-semibold">Clear</button>
+                    </div>
+                </div>
+                <div id="dayCheckboxes" class="grid grid-cols-2 sm:grid-cols-7 gap-2">
+                    <!-- Injected via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Day Filter Tabs -->
+        <div class="flex overflow-x-auto gap-2 pb-2 mb-4 scrollbar-thin">
+            <button onclick="filterDay('All')" id="tab-All" class="day-tab px-4 py-2 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap bg-blue-600 text-white shadow">All Days / সব দিন</button>
+            <button onclick="filterDay('Mon')" id="tab-Mon" class="day-tab px-4 py-2 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap bg-slate-200 text-slate-700 hover:bg-slate-300">Monday / সোমবার</button>
+            <button onclick="filterDay('Tue')" id="tab-Tue" class="day-tab px-4 py-2 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap bg-slate-200 text-slate-700 hover:bg-slate-300">Tuesday / মঙ্গলবার</button>
+            <button onclick="filterDay('Wed')" id="tab-Wed" class="day-tab px-4 py-2 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap bg-slate-200 text-slate-700 hover:bg-slate-300">Wednesday / বুধবার</button>
+            <button onclick="filterDay('Thu')" id="tab-Thu" class="day-tab px-4 py-2 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap bg-slate-200 text-slate-700 hover:bg-slate-300">Thursday / বৃহস্পতিবার</button>
+            <button onclick="filterDay('Fri')" id="tab-Fri" class="day-tab px-4 py-2 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap bg-slate-200 text-slate-700 hover:bg-slate-300">Friday / শুক্রবার</button>
+            <button onclick="filterDay('Sat')" id="tab-Sat" class="day-tab px-4 py-2 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap bg-slate-200 text-slate-700 hover:bg-slate-300">Saturday / শনিবার</button>
+            <button onclick="filterDay('Sun')" id="tab-Sun" class="day-tab px-4 py-2 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap bg-slate-200 text-slate-700 hover:bg-slate-300">Sunday / রবিবার</button>
+        </div>
+
+        <!-- Task List Container -->
+        <div class="space-y-3 max-h-80 overflow-y-auto pr-1" id="taskList">
+            <!-- Dynamic Tasks -->
+        </div>
+    </div>
+
+    <!-- Required Credit Footer -->
+    <footer class="w-full max-w-4xl mx-auto text-center mt-6 py-4 px-4 bg-slate-900/80 rounded-2xl border border-white/10 text-xs sm:text-sm text-slate-300 shadow-xl">
+        Designed & Developed by <strong class="text-cyan-400">Jakir Hossain Rifat</strong>, Department of Economics, <span class="text-amber-300">Dinajpur Govt College</span>
+    </footer>
+
+    <script>
+        let currentLang = 'en'; // 'en' or 'bn'
+        let tasks = JSON.parse(localStorage.getItem('chronoflow_tasks_v3')) || [
+            { id: 1, name: "Morning Economics Study", time: "08:00", days: ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"], completed: false }
+        ];
+        let activeFilter = 'All';
+        let audioCtx = null;
+        let alarmInterval = null;
+        let activeAlarmTask = null;
+
+        const dayNamesMap = {
+            en: { Mon: 'Mon', Tue: 'Tue', Wed: 'Wed', Thu: 'Thu', Fri: 'Fri', Sat: 'Sat', Sun: 'Sun' },
+            bn: { Mon: 'সোম', Tue: 'মঙ্গল', Wed: 'বুধ', Thu: 'বৃহঃ', Fri: 'শুক্র', Sat: 'শনি', Sun: 'রবি' }
+        };
+
+        const translations = {
+            en: {
+                audioBtn: "Enable Sound / সাউন্ড চালু",
+                langSwitch: "বাংলা / English",
+                addTitle: "➕ Add New Weekly Task",
+                addPlaceholder: "Task title (e.g., Study Economics)...",
+                addBtn: "Add Task",
+                selectDays: "Select Days:",
+                dismiss: "Done / Finish",
+                alarmHead: "🚨 ALARM TRIGGERED!",
+                footer: "Designed & Developed by Jakir Hossain Rifat, Department of Economics, Dinajpur Govt College"
+            },
+            bn: {
+                audioBtn: "সক্রিয় করুন (Enable Sound)",
+                langSwitch: "English / বাংলা",
+                addTitle: "➕ নতুন সাপ্তাহিক কাজ যোগ করুন",
+                addPlaceholder: "কাজের নাম লিখুন...",
+                addBtn: "কাজ যোগ করুন",
+                selectDays: "যেসব বারের জন্য প্রযোজ্য:",
+                dismiss: "সম্পন্ন / শেষ",
+                alarmHead: "🚨 অ্যালার্ম বেজে উঠেছে!",
+                footer: "প্রস্তুতকারক: জাকির হোসেন রিফাত, অর্থনীতি বিভাগ, দিনাজপুর সরকারি কলেজ"
+            }
+        };
+
+        function initDayCheckboxes() {
+            const container = document.getElementById('dayCheckboxes');
+            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            container.innerHTML = days.map(d => `
+                <label class="flex items-center gap-1.5 text-xs font-semibold bg-white px-2 py-1.5 rounded-lg border border-slate-200 cursor-pointer hover:bg-slate-50 text-slate-700">
+                    <input type="checkbox" name="taskDay" value="${d}" checked class="rounded text-blue-600 focus:ring-blue-500">
+                    <span>${dayNamesMap[currentLang][d]}</span>
+                </label>
+            `).join('');
+        }
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'en' ? 'bn' : 'en';
+            initDayCheckboxes();
+            updateTexts();
+            renderTasks();
+        }
+
+        function updateTexts() {
+            document.getElementById('txtAudioBtn').innerText = translations[currentLang].audioBtn;
+            document.getElementById('txtAddTitle').innerText = translations[currentLang].addTitle;
+            document.getElementById('taskInput').placeholder = translations[currentLang].addPlaceholder;
+            document.getElementById('txtAddBtn').innerText = translations[currentLang].addBtn;
+            document.getElementById('txtSelectDays').innerText = translations[currentLang].selectDays;
+            document.getElementById('txtDismiss').innerText = translations[currentLang].dismiss;
+            document.getElementById('alarmTitle').innerText = translations[currentLang].alarmHead;
+        }
+
+        function unlockAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            alert(currentLang === 'en' ? "Audio engine enabled successfully!" : "সাউন্ড ইঞ্জিন সফলভাবে সক্রিয় হয়েছে!");
+        }
+
+        function playLoudSiren() {
+            if (!audioCtx) return;
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                let osc1 = audioCtx.createOscillator();
+                let osc2 = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+
+                osc1.type = 'sawtooth';
+                osc2.type = 'square';
+
+                let now = audioCtx.currentTime;
+                osc1.frequency.setValueAtTime(800, now);
+                osc1.frequency.exponentialRampToValueAtTime(1200, now + 0.3);
+                
+                osc2.frequency.setValueAtTime(400, now);
+                osc2.frequency.exponentialRampToValueAtTime(600, now + 0.3);
+
+                gain.gain.setValueAtTime(0.5, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+
+                osc1.connect(gain);
+                osc2.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc1.start(now);
+                osc2.start(now);
+                osc1.stop(now + 0.5);
+                osc2.stop(now + 0.5);
+            } catch(e) { console.log(e); }
+        }
+
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                let utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = currentLang === 'bn' ? 'bn-BD' : 'en-US';
+                utterance.rate = 1.0;
+                utterance.pitch = 1.1;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function selectAllDays(status) {
+            document.querySelectorAll('input[name="taskDay"]').forEach(cb => cb.checked = status);
+        }
+
+        function addTask(e) {
+            e.preventDefault();
+            const name = document.getElementById('taskInput').value;
+            const time = document.getElementById('taskTime').value;
+            const selectedDays = Array.from(document.querySelectorAll('input[name="taskDay"]:checked')).map(cb => cb.value);
+
+            if (selectedDays.length === 0) {
+                alert(currentLang === 'en' ? "Please select at least one day!" : "দয়া করে অন্তত একটি দিন নির্বাচন করুন!");
+                return;
+            }
+
+            const newTask = {
+                id: Date.now(),
+                name,
+                time,
+                days: selectedDays,
+                completed: false
+            };
+
+            tasks.push(newTask);
+            saveAndRender();
+            document.getElementById('taskForm').reset();
+            initDayCheckboxes();
+        }
+
+        function deleteTask(id) {
+            tasks = tasks.filter(t => t.id !== id);
+            saveAndRender();
+        }
+
+        function filterDay(day) {
+            activeFilter = day;
+            document.querySelectorAll('.day-tab').forEach(btn => {
+                btn.className = "day-tab px-4 py-2 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap bg-slate-200 text-slate-700 hover:bg-slate-300";
+            });
+            document.getElementById(`tab-${day}`).className = "day-tab px-4 py-2 rounded-xl font-bold text-xs sm:text-sm whitespace-nowrap bg-blue-600 text-white shadow";
+            renderTasks();
+        }
+
+        function saveAndRender() {
+            localStorage.setItem('chronoflow_tasks_v3', JSON.stringify(tasks));
+            renderTasks();
+        }
+
+        function renderTasks() {
+            const container = document.getElementById('taskList');
+            let filtered = tasks;
+            if (activeFilter !== 'All') {
+                filtered = tasks.filter(t => t.days.includes(activeFilter));
+            }
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<p class="text-center text-slate-400 py-6 text-sm font-medium">No tasks found for this day / এই দিনে কোনো কাজ নেই</p>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map(t => `
+                <div class="flex items-center justify-between p-4 rounded-2xl border ${t.completed ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-slate-200'} shadow-sm transition hover:shadow-md">
+                    <div class="flex items-center gap-3">
+                        <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleComplete(${t.id})" class="w-5 h-5 rounded-lg text-blue-600 focus:ring-blue-500 cursor-pointer">
+                        <div>
+                            <h4 class="font-bold text-sm sm:text-base ${t.completed ? 'line-through text-slate-400' : 'text-slate-800'}">${t.name}</h4>
+                            <div class="flex items-center gap-2 mt-0.5 text-xs text-slate-500 font-semibold">
+                                <span class="text-blue-600 font-bold">⏰ ${t.time}</span>
+                                <span>•</span>
+                                <span>📅 ${t.days.map(d => dayNamesMap[currentLang][d]).join(', ')}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="deleteTask(${t.id})" class="text-slate-400 hover:text-red-500 p-2 rounded-lg transition">🗑️</button>
+                </div>
+            `).join('');
+        }
+
+        function toggleComplete(id) {
+            const task = tasks.find(t => t.id === id);
+            if (task) {
+                task.completed = !task.completed;
+                if (task.completed) {
+                    confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+                    const nextTask = tasks.find(t => !t.completed && t.id !== id);
+                    if (nextTask) {
+                        let msg = currentLang === 'en' ? `Great job! Next task is ${nextTask.name} at ${nextTask.time}` : `দারুণ কাজ! পরবর্তী কাজ হলো ${nextTask.name}, সময় ${nextTask.time}`;
+                        speakText(msg);
+                    }
+                }
+                saveAndRender();
+            }
+        }
+
+        // Clock & Alarm Monitor
+        setInterval(() => {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const currentTimeStr = `${hours}:${minutes}`;
+
+            const daysMapIndex = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const currentDayCode = daysMapIndex[now.getDay()];
+
+            tasks.forEach(t => {
+                if (!t.completed && t.time === currentTimeStr && t.days.includes(currentDayCode) && activeAlarmTask !== t.id) {
+                    triggerAlarm(t);
+                }
+            });
+        }, 1000);
+
+        function triggerAlarm(task) {
+            activeAlarmTask = task.id;
+            document.getElementById('alarmBanner').classList.remove('hidden');
+            document.getElementById('alarmTaskName').innerText = `${task.name} (${task.time})`;
+            
+            // Continuous Voice & Siren
+            playLoudSiren();
+            let alertMsg = currentLang === 'en' ? `Attention! Time for task: ${task.name}. Please start now!` : `মনোযোগ দিন! কাজের সময় হয়েছে: ${task.name}। দয়া করে কাজ শুরু করুন!`;
+            speakText(alertMsg);
+
+            alarmInterval = setInterval(() => {
+                playLoudSiren();
+                speakText(alertMsg);
+            }, 7000);
+        }
+
+        function snoozeAlarm() {
+            clearInterval(alarmInterval);
+            document.getElementById('alarmBanner').classList.add('hidden');
+            setTimeout(() => { activeAlarmTask = null; }, 300000); // 5 mins snooze
+        }
+
+        function dismissAlarm() {
+            clearInterval(alarmInterval);
+            document.getElementById('alarmBanner').classList.add('hidden');
+            if (activeAlarmTask) {
+                const task = tasks.find(t => t.id === activeAlarmTask);
+                if (task) {
+                    task.completed = true;
+                    confetti({ particleCount: 100, spread: 80, origin: { y: 0.6 } });
+                }
+                activeAlarmTask = null;
+                saveAndRender();
+            }
+        }
+
+        // Initialize App
+        initDayCheckboxes();
+        renderTasks();
+    </script>
+</body>
+</html>
